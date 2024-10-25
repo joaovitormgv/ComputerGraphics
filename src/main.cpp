@@ -85,7 +85,6 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, esfColor.r, esfColor.g, esfColor.b, esfColor.a);
 
         // Aqui temos a estrutura para pintar um pixel, no caso, um loop para pintar todos os pixeis da janela
-        int countIntersections = 0;
         for (int lin = 0; lin < nLin; lin++) {
             float yp = hJanela / 2.0f - Dy / 2.0f - lin * Dy;
             for (int col = 0; col < nCol; col++) {
@@ -98,14 +97,12 @@ int main(int argc, char* argv[]) {
                 float t0 = 1000.0f;
                 if (esfera.intersect(raio, t0)) {
                     SDL_RenderDrawPoint(renderer, col, lin); 
-                    countIntersections++;   
                 }
             }
         }
 
         // Por fim, atualizamos a janela com o renderer que acabamos de pintar e tudo deve funcionar corretamente
         SDL_RenderPresent(renderer);
-        cout << "Número de interseções: " << countIntersections << endl;
     }
 
     // Destruir os objetos criados para limpar a memória
