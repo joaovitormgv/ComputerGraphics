@@ -3,6 +3,7 @@
 #include "../include/Vec3.h"
 #include "../include/Ray.h"
 #include "../include/Sphere.h"
+#include "../include/PontoLuminoso.h"
 
 
 using namespace std;
@@ -12,10 +13,18 @@ const float hJanela = 1.5f;      // Altura da janela em metros
 const float dJanela = 1.0f;      // Distância da janela virtual em metros
 const float rEsfera = 1.0f;      // Raio da esfera
 const Vec3 centroEsfera(0.0f, 0.0f, - (dJanela + rEsfera)); // Centro da esfera
-const SDL_Color esfColor = {255, 0, 0, 255};   // Cor da esfera (vermelho)
 const SDL_Color bgColor = {100, 100, 100, 255}; // Cor de fundo (cinza)
 const int nCol = 800; // Número de colunas (pixels na horizontal)
 const int nLin = 600; // Número de linhas (pixels na vertical)
+
+PontoLuminoso luz(Vec3(0.0f, 5.0f, 0.0f), Vec3(0.7f, 0.7f, 0.7f));
+
+// Coeficientes de reflexão da esfera
+const Vec3 K_d(1.0f, 0.0f, 0.0f); // Coeficiente de reflexão difusa (vermelho)
+const Vec3 K_e(1.0f, 1.0f, 1.0f); // Coeficiente de reflexão especular (branco)
+
+const float m = 32.0f; // Expoente de brilho (shininess)
+
 
 int main(int argc, char* argv[]) {
 
@@ -82,7 +91,7 @@ int main(int argc, char* argv[]) {
 
 
         // Definir a cor para a esfera
-        SDL_SetRenderDrawColor(renderer, esfColor.r, esfColor.g, esfColor.b, esfColor.a);
+        
 
         // Aqui temos a estrutura para pintar um pixel, no caso, um loop para pintar todos os pixeis da janela
         for (int lin = 0; lin < nLin; lin++) {
@@ -96,7 +105,42 @@ int main(int argc, char* argv[]) {
 
                 float t0 = 1000.0f;
                 if (esfera.intersect(raio, t0)) {
+                    // Ponto de interseção do raio com a esfera
+                    Vec3 P_I = raio.origin + raio.direction * t0;
+
+                    // Vetor normal à superfície da esfera no ponto de interseção
+                    Vec3 N = (P_I - esfera.center).normalize();
+
+                    // Vetor que vai do ponto de interseção até o olho do observador
+                    Vec3 v = -raio.direction.normalize();
+
+                    // Vetor que vai do ponto de interseção até a fonte de luz
+                    Vec3 l = (luz.position - P_I).normalize();
+
+                    // vetor de reflexão da luz
+                    Vec3 r = N * 2 * N.dot(l) - l;
+
+                    // Calculando produtos escalares
+                    // impedindo que o produto escalar seja negativo
+                    float NdotL = std::max(0.0f, N.dot(l));
+                    float RdotV = std::max(0.0f, r.dot(v));
+
+                    // Calcular a intensidade da reflexão difusa
+                    Vec3 I_d = K_d * luz.intensity * NdotL;
+
+                    // Calcular a intensidade da reflexão especular
+                    Vec3 I_e = K_e * luz.intensity * std::pow(RdotV, m);
+
+                    Vec3 I = I_d + I_e;
+
+                    // Converter a intensidade para a faixa de 0 a 255
+                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
+                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
+                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
+
+                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
                     SDL_RenderDrawPoint(renderer, col, lin); 
+                
                 }
             }
         }
