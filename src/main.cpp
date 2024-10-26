@@ -5,17 +5,21 @@
 #include "../include/Sphere.h"
 #include "../include/PontoLuminoso.h"
 
-
 using namespace std;
 
-const float wJanela = 2.0f;      // Largura da janela em metros
-const float hJanela = 1.5f;      // Altura da janela em metros
-const float dJanela = 1.0f;      // Distância da janela virtual em metros
-const float rEsfera = 1.0f;      // Raio da esfera
-const Vec3 centroEsfera(0.0f, 0.0f, - (dJanela + rEsfera)); // Centro da esfera
-const SDL_Color bgColor = {100, 100, 100, 255}; // Cor de fundo (cinza)
-const int nCol = 800; // Número de colunas (pixels na horizontal)
-const int nLin = 600; // Número de linhas (pixels na vertical)
+const float wJanela = 2.0f;                                // Largura da janela em metros
+const float hJanela = 1.5f;                                // Altura da janela em metros
+const float dJanela = 1.0f;                                // Distância da janela virtual em metros
+const float rEsfera = 1.0f;                                // Raio da esfera
+const Vec3 centroEsfera(0.0f, 0.0f, -(dJanela + rEsfera)); // Centro da esfera
+const SDL_Color bgColor = {100, 100, 100, 255};            // Cor de fundo (cinza)
+const int nCol = 800;                                      // Número de colunas (pixels na horizontal)
+const int nLin = 600;                                      // Número de linhas (pixels na vertical)
+
+const float lightMoveSpeed = 0.1f;
+bool isRunning = true;
+SDL_Event event;
+SDL_Renderer *renderer;
 
 PontoLuminoso luz(Vec3(0.0f, 5.0f, 0.0f), Vec3(0.7f, 0.7f, 0.7f));
 
@@ -25,35 +29,38 @@ const Vec3 K_e(1.0f, 1.0f, 1.0f); // Coeficiente de reflexão especular (branco)
 
 const float m = 32.0f; // Expoente de brilho (shininess)
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 
     // Inicializar a biblioteca para poder usar suas funções
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
         SDL_Log("Não foi possível inicializar o SDL! SDL_Error: %s", SDL_GetError());
         return 1;
     }
 
     // Criar uma janela
-    SDL_Window* window = SDL_CreateWindow(
-        "CG I - Raycaster",       // Título da Janela
-        SDL_WINDOWPOS_UNDEFINED,        // Posição inicial X
-        SDL_WINDOWPOS_UNDEFINED,        // Posição inicial Y
-        nCol,                           // Largura da janela em pixels
-        nLin,                            // Altura da janela em pixels
-        SDL_WINDOW_SHOWN                // Flags
+    SDL_Window *window = SDL_CreateWindow(
+        "CG I - Raycaster",      // Título da Janela
+        SDL_WINDOWPOS_UNDEFINED, // Posição inicial X
+        SDL_WINDOWPOS_UNDEFINED, // Posição inicial Y
+        nCol,                    // Largura da janela em pixels
+        nLin,                    // Altura da janela em pixels
+        SDL_WINDOW_SHOWN         // Flags
     );
 
     // Verificar se a janela foi criada corretamente
-    if (!window) {
+    if (!window)
+    {
         SDL_Log("Criação da janela falhou! SDL_Error: %s", SDL_GetError());
         SDL_Quit();
         return 1;
     }
 
     // Criar o objeto renderer
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer)
+    {
         SDL_Log("Criação do renderer falhou! SDL_Error: %s", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -73,15 +80,42 @@ int main(int argc, char* argv[]) {
     float Dy = hJanela / nLin;
 
     // Main loop - É dentro do main while loop que fazemos todas as interações com a janela
-    bool isRunning = true; //variável de controle do loop
-    SDL_Event event; //variável para checar os eventos da janela
+    bool isRunning = true; // variável de controle do loop
+    SDL_Event event;       // variável para checar os eventos da janela
 
-    while (isRunning) {
+    while (isRunning)
+    {
         // É possível interagir com a janela, com clicks, apertando teclas ou clicando para fechar a janela
         // essas interações são chamadas de "eventos", abaixo, verificamos se o evento de fechar janela ocorre
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
                 isRunning = false;
+            }
+            else if (event.type == SDL_KEYDOWN)
+            {
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_UP:
+                    luz.position.y += lightMoveSpeed;
+                    break;
+                case SDLK_DOWN:
+                    luz.position.y -= lightMoveSpeed;
+                    break;
+                case SDLK_LEFT:
+                    luz.position.x -= lightMoveSpeed;
+                    break;
+                case SDLK_RIGHT:
+                    luz.position.x += lightMoveSpeed;
+                    break;
+                case SDLK_PAGEUP:
+                    luz.position.z += lightMoveSpeed;
+                    break;
+                case SDLK_PAGEDOWN:
+                    luz.position.z -= lightMoveSpeed;
+                    break;
+                }
             }
         }
 
@@ -89,22 +123,23 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
         SDL_RenderClear(renderer);
 
-
         // Definir a cor para a esfera
-        
 
         // Aqui temos a estrutura para pintar um pixel, no caso, um loop para pintar todos os pixeis da janela
-        for (int lin = 0; lin < nLin; lin++) {
+        for (int lin = 0; lin < nLin; lin++)
+        {
             float yp = hJanela / 2.0f - Dy / 2.0f - lin * Dy;
-            for (int col = 0; col < nCol; col++) {
-                float xp = - wJanela / 2.0f + Dx / 2.0f + col * Dx;
-                
+            for (int col = 0; col < nCol; col++)
+            {
+                float xp = -wJanela / 2.0f + Dx / 2.0f + col * Dx;
+
                 Vec3 pontoCentroPixel(xp, yp, -dJanela);
 
                 Ray raio(Vec3(0.0f, 0.0f, 0.0f), pontoCentroPixel);
 
                 float t0 = 1000.0f;
-                if (esfera.intersect(raio, t0)) {
+                if (esfera.intersect(raio, t0))
+                {
                     // Ponto de interseção do raio com a esfera
                     Vec3 P_I = raio.origin + raio.direction * t0;
 
@@ -139,8 +174,7 @@ int main(int argc, char* argv[]) {
                     int B = std::min(255, std::max(0, (int)(I.z * 255)));
 
                     SDL_SetRenderDrawColor(renderer, R, G, B, 255);
-                    SDL_RenderDrawPoint(renderer, col, lin); 
-                
+                    SDL_RenderDrawPoint(renderer, col, lin);
                 }
             }
         }
