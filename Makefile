@@ -1,5 +1,5 @@
 # Definições de compilador e flags
-CXX = clang++
+CXX = g++
 CXXFLAGS = `sdl2-config --cflags` -Wall -Wextra -std=c++17
 LDFLAGS = `sdl2-config --libs`
 
