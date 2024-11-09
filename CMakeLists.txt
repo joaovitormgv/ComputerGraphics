@@ -14,6 +14,7 @@ set(SOURCE_FILES
         src/Vec3.cpp
         src/Ray.cpp
         src/Sphere.cpp
+        src/Plane.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
