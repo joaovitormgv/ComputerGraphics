@@ -12,6 +12,8 @@ public:
     Vec3 operator + (const Vec3& v ) const;
     Vec3 operator - (const Vec3& v ) const;
     Vec3 operator * (float s ) const;
+    Vec3 operator * (const Vec3& v) const;
+    Vec3 operator - () const;
     float dot(const Vec3& v ) const; // Produto escalar
     float norma() const; // Magnitude
     Vec3 normalize() const;
