@@ -44,6 +44,13 @@ const Vec3 Kf_e(0.0f, 0.0f, 0.0f); // Coeficiente de reflexão especular (azul)
 
 const float m_f = 1.0f; // Expoente de brilho (shininess)
 
+void setRenderColor(SDL_Renderer* renderer, const Vec3& I) {
+    const int R = std::min(255, std::max(0, (int)(I.x * 255)));
+    const int G = std::min(255, std::max(0, (int)(I.y * 255)));
+    const int B = std::min(255, std::max(0, (int)(I.z * 255)));
+    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
+}
+
 int main(int argc, char *argv[])
 {
     // Inicializar a biblioteca para poder usar suas funções
@@ -142,12 +149,7 @@ int main(int argc, char *argv[])
 
                     Vec3 I = esfera.calculateLighting(P_I, raio, luz, luzAmb, Ke_d, Ke_a, Ke_e, m);
 
-                    // Converter a intensidade para a faixa de 0 a 255
-                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
+                    setRenderColor(renderer, I);
                 }
                 else if (hitChao && tChao < tEsfera && tChao < tFundo)
                 {
@@ -156,12 +158,7 @@ int main(int argc, char *argv[])
 
                     const Vec3 I = chao.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kc_d, Kc_a, Kc_e, m_c);
 
-                    // Converter a intensidade para a faixa de 0 a 255
-                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
+                    setRenderColor(renderer, I);
 
                 }
                 else if (hitFundo && tFundo < tEsfera)
@@ -171,12 +168,7 @@ int main(int argc, char *argv[])
 
                     const Vec3 I = fundo.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kf_d, Kf_a, Kf_e, m_f);
 
-                    // Converter a intensidade para a faixa de 0 a 255
-                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
+                    setRenderColor(renderer, I);
 
                 }
                 else
