@@ -31,6 +31,7 @@ set(SOURCE_FILES
         src/Ray.cpp
         src/Sphere.cpp
         src/Plane.cpp
+        src/Cilindro.cpp
 )
 
 # Adicionar o executável

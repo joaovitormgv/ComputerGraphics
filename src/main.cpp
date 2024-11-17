@@ -5,6 +5,7 @@
 #include "../include/Sphere.h"
 #include "../include/PontoLuminoso.h"
 #include "../include/Plane.h"
+#include "../include/Cilindro.h"
 
 using namespace std;
 
@@ -96,6 +97,14 @@ int main(int argc, char *argv[])
     // Criar a esfera
     Sphere esfera(centroEsfera, rEsfera);
 
+    // Criar o cilindro
+    Vec3 dirCilindro = Vec3(-1/std::sqrt(3), 1/std::sqrt(3), 1/std::sqrt(3));
+    // Vec3 dirCilindro = Vec3(0.0f, 1.0f, 0.0f);
+    Cilindro cilindro(1.5*rEsfera, rEsfera/3, dirCilindro, centroEsfera);
+    Vec3 Kd_c = Vec3(0.2f, 0.3f, 0.8f);
+    Vec3 Ka_c = Kd_c;
+    Vec3 Ke_c = Kd_c;
+
     // Definir as dimensões dos pixels virtuais
     float Dx = wJanela / nCol;
     float Dy = hJanela / nLin;
@@ -137,12 +146,14 @@ int main(int argc, char *argv[])
                 float tEsfera = std::numeric_limits<float>::max();
                 float tChao = std::numeric_limits<float>::max();
                 float tFundo = std::numeric_limits<float>::max();
+                float tCilindro = std::numeric_limits<float>::max();
 
                 bool hitEsfera = esfera.intersect(raio, tEsfera);
                 bool hitChao = chao.intersect(raio, tChao);
                 bool hitFundo = fundo.intersect(raio, tFundo);
+                bool hitCilindro = cilindro.intersect(raio, tCilindro);
 
-                if (hitEsfera && (tEsfera < std::fabs(tChao) && tEsfera < std::fabs(tFundo)))
+                if (hitEsfera && (tEsfera < std::fabs(tChao) && tEsfera < std::fabs(tFundo) && tEsfera < std::fabs(tCilindro)))
                 {
                     // Ponto de interseção do raio com a esfera
                     Vec3 P_I = raio.origin + raio.direction * tEsfera;
@@ -151,7 +162,15 @@ int main(int argc, char *argv[])
 
                     setRenderColor(renderer, I);
                 }
-                else if (hitChao && tChao < tEsfera && tChao < tFundo)
+                else if (hitCilindro && (tCilindro < std::fabs(tChao) || tCilindro < std::fabs(tFundo)))
+                {
+                    Vec3 P_I = raio.origin + raio.direction * tCilindro;
+
+                    Vec3 I = cilindro.calculateLighting(P_I, raio, luz, luzAmb, Kd_c, Ka_c, Ke_c, m);
+
+                    setRenderColor(renderer, I);
+                }
+                else if (hitChao && tChao < tEsfera && tChao < tFundo )
                 {
                     // Ponto de interseção do raio com o chão
                     Vec3 P_I = raio.origin + raio.direction * tChao;
@@ -161,7 +180,7 @@ int main(int argc, char *argv[])
                     setRenderColor(renderer, I);
 
                 }
-                else if (hitFundo && tFundo < tEsfera)
+                else if (hitFundo && (tFundo < tEsfera || tFundo < tCilindro))
                 {
                     // Ponto de interseção do raio com o chão
                     Vec3 P_I = raio.origin + raio.direction * tFundo;

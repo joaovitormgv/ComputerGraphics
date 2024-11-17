@@ -49,7 +49,7 @@ Vec3 Sphere::calculateLighting(const Vec3& P_I, Ray& raio, const PontoLuminoso& 
     const Vec3 l = (luz.position - P_I).normalize();
 
     // Vetor de reflexão da luz
-    const Vec3 r = (N *2 *N.dot(l) - l).normalize();
+    const Vec3 r = (N * 2 *N.dot(l) - l).normalize();
 
     const float NdotL = std::max(0.0f, N.dot(l));
     const float RdotV = std::max(0.0f, r.dot(v));
