@@ -140,33 +140,7 @@ int main(int argc, char *argv[])
                     // Ponto de interseção do raio com a esfera
                     Vec3 P_I = raio.origin + raio.direction * tEsfera;
 
-                    // Vetor normal à superfície da esfera no ponto de interseção
-                    Vec3 N = (P_I - esfera.center).normalize();
-
-                    // Vetor que vai do ponto de interseção até o olho do observador
-                    Vec3 v = -raio.direction.normalize();
-
-                    // Vetor que vai do ponto de interseção até a fonte de luz
-                    Vec3 l = (luz.position - P_I).normalize();
-
-                    // vetor de reflexão da luz
-                    Vec3 r = (N * 2 * N.dot(l) - l).normalize();
-
-                    // Calculando produtos escalares
-                    // impedindo que o produto escalar seja negativo
-                    float NdotL = std::max(0.0f, N.dot(l));
-                    float RdotV = std::max(0.0f, r.dot(v));
-
-                    // Calcular a intensidade da reflexão difusa
-                    Vec3 I_d = Ke_d * luz.intensity * NdotL;
-
-                    // Calcular a intensidade da reflexão especular
-                    Vec3 I_e = Ke_e * luz.intensity * std::pow(RdotV, m);
-
-                    // Calcular a intensidade da reflexão ambiente
-                    Vec3 I_a = Ke_a * luzAmb.intensity;
-
-                    Vec3 I = I_d + I_e + I_a;
+                    Vec3 I = esfera.calculateLighting(P_I, raio, luz, luzAmb, Ke_d, Ke_a, Ke_e, m);
 
                     // Converter a intensidade para a faixa de 0 a 255
                     int R = std::min(255, std::max(0, (int)(I.x * 255)));
@@ -180,101 +154,30 @@ int main(int argc, char *argv[])
                     // Ponto de interseção do raio com o chão
                     Vec3 P_I = raio.origin + raio.direction * tChao;
 
-                    Vec3 N = chao.normal;
+                    const Vec3 I = chao.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kc_d, Kc_a, Kc_e, m_c);
 
-                    Vec3 v = -raio.direction.normalize();
+                    // Converter a intensidade para a faixa de 0 a 255
+                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
+                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
+                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
 
-                    Vec3 l = (luz.position - P_I).normalize();
+                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
 
-                    Ray raioSombra(P_I + N * 1e-4f, luz.position);
-                    float tEsferaSombra = std::numeric_limits<float>::max();
-                    bool hitEsferaSombra = esfera.intersect(raioSombra, tEsferaSombra);
-
-                    if (hitEsferaSombra)
-                    {
-                        Vec3 I_a = Kc_a * luzAmb.intensity;
-
-                        Vec3 I = I_a;
-
-                        // Converter a intensidade para a faixa de 0 a 255
-                        int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                        int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                        int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                        SDL_SetRenderDrawColor(renderer, R, G, B, 255);
-                    }
-                    else
-                    {
-                        Vec3 r = (N * 2 * N.dot(l) - l).normalize();
-
-                        // Calcnulando produtos escalares
-                        float NdotL = std::max(0.0f, N.dot(l));
-                        float RdotV = std::max(0.0f, r.dot(v));
-
-                        Vec3 I_d = Kc_d * luz.intensity * NdotL;
-
-                        Vec3 I_e = Kc_e * luz.intensity * std::pow(RdotV, m_c);
-
-                        Vec3 I_a = Kc_a * luzAmb.intensity;
-
-                        Vec3 I = I_d + I_e + I_a;
-
-                        // Converter a intensidade para a faixa de 0 a 255
-                        int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                        int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                        int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                        SDL_SetRenderDrawColor(renderer, R, G, B, 255);
-                    }
                 }
                 else if (hitFundo && tFundo < tEsfera)
                 {
                     // Ponto de interseção do raio com o chão
                     Vec3 P_I = raio.origin + raio.direction * tFundo;
 
-                    Vec3 N = fundo.normal;
+                    const Vec3 I = fundo.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kf_d, Kf_a, Kf_e, m_f);
 
-                    Vec3 v = -raio.direction.normalize();
+                    // Converter a intensidade para a faixa de 0 a 255
+                    int R = std::min(255, std::max(0, (int)(I.x * 255)));
+                    int G = std::min(255, std::max(0, (int)(I.y * 255)));
+                    int B = std::min(255, std::max(0, (int)(I.z * 255)));
 
-                    Vec3 l = (luz.position - P_I).normalize();
+                    SDL_SetRenderDrawColor(renderer, R, G, B, 255);
 
-                    Ray raioSombra(P_I + N * 1e-4f, luz.position);
-                    float tEsferaSombra = std::numeric_limits<float>::max();
-                    bool hitEsferaSombra = esfera.intersect(raioSombra, tEsferaSombra);
-                    
-                    if (hitEsferaSombra) {
-                        Vec3 I_a = Kf_a * luzAmb.intensity;
-
-                        Vec3 I = I_a;    
-
-                        // Converter a intensidade para a faixa de 0 a 255
-                        int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                        int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                        int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                        SDL_SetRenderDrawColor(renderer, R, G, B, 255);
-                    } else {
-                        Vec3 r = (N * 2 * N.dot(l) - l).normalize();
-
-                        // Calcnulando produtos escalares
-                        float NdotL = std::max(0.0f, N.dot(l));
-                        float RdotV = std::max(0.0f, r.dot(v));
-
-                        Vec3 I_d = Kf_d * luz.intensity * NdotL;
-
-                        Vec3 I_e = Kf_e * luz.intensity * std::pow(RdotV, m_f);
-
-                        Vec3 I_a = Kf_a * luzAmb.intensity;
-
-                        Vec3 I = I_d + I_e + I_a;
-
-                        // Converter a intensidade para a faixa de 0 a 255
-                        int R = std::min(255, std::max(0, (int)(I.x * 255)));
-                        int G = std::min(255, std::max(0, (int)(I.y * 255)));
-                        int B = std::min(255, std::max(0, (int)(I.z * 255)));
-
-                        SDL_SetRenderDrawColor(renderer, R, G, B, 255);
-                    }
                 }
                 else
                 {
