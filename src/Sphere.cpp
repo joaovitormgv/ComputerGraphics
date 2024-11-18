@@ -1,5 +1,6 @@
 #include "../include/Sphere.h"
 #include <cmath>
+#include <iostream>
 
 Sphere::Sphere(Vec3 center_, float radius_) : center(center_), radius(radius_) {}
 

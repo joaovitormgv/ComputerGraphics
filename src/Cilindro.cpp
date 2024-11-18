@@ -1,4 +1,5 @@
 #include "../include/Cilindro.h"
+#include <iostream>
 
 Cilindro::Cilindro(float altura_, float raioBase_, Vec3 direction_, Vec3 CentroBase_) : altura(altura_), raioBase(raioBase_), direction(direction_), CentroBase(CentroBase_) {}
 

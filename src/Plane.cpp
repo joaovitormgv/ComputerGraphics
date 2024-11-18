@@ -3,6 +3,7 @@
 #include "../include/Ray.h"
 #include <cmath>
 #include <Sphere.h>
+#include <iostream>
 
 Plane::Plane(Vec3 point_, Vec3 normal_) : point(point_), normal(normal_.normalize()) {}
 
