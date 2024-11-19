@@ -6,6 +6,7 @@
 #include "../include/PontoLuminoso.h"
 #include "../include/Plane.h"
 #include "../include/Cilindro.h"
+#include "../include/Cone.h"
 
 using namespace std;
 
@@ -45,7 +46,8 @@ const Vec3 Kf_e(0.0f, 0.0f, 0.0f); // Coeficiente de reflexão especular (azul)
 
 const float m_f = 1.0f; // Expoente de brilho (shininess)
 
-void setRenderColor(SDL_Renderer* renderer, const Vec3& I) {
+void setRenderColor(SDL_Renderer *renderer, const Vec3 &I)
+{
     const int R = std::min(255, std::max(0, (int)(I.x * 255)));
     const int G = std::min(255, std::max(0, (int)(I.y * 255)));
     const int B = std::min(255, std::max(0, (int)(I.z * 255)));
@@ -98,12 +100,28 @@ int main(int argc, char *argv[])
     Sphere esfera(centroEsfera, rEsfera);
 
     // Criar o cilindro
-    Vec3 dirCilindro = Vec3(-1/std::sqrt(3), 1/std::sqrt(3), 1/std::sqrt(3));
+    float alturaCilindro = 1.5 * rEsfera;
+    float raioCilindro = rEsfera / 3;
+    Vec3 dirCilindro = Vec3(-1 / std::sqrt(3), 1 / std::sqrt(3), 1 / std::sqrt(3));
+    Vec3 centroCilindro = centroEsfera;
+
     // Vec3 dirCilindro = Vec3(0.0f, 1.0f, 0.0f);
-    Cilindro cilindro(1.5*rEsfera, rEsfera/3, dirCilindro, centroEsfera);
+    Cilindro cilindro(alturaCilindro, raioCilindro, dirCilindro.normalize(), centroCilindro);
     Vec3 Kd_c = Vec3(0.2f, 0.3f, 0.8f);
     Vec3 Ka_c = Kd_c;
     Vec3 Ke_c = Kd_c;
+
+    // Criar o cone
+    float raioBase = 1.5 * raioCilindro;
+    float alturaCone = raioBase/3;
+    Vec3 dirCone = dirCilindro;
+    // Vec3 dirCone = Vec3(0.0, 1.0, 0);
+
+    Vec3 centroBase = centroCilindro + dirCilindro * alturaCilindro;
+    // Vec3 centroBase = centroEsfera + Vec3(0.0, 1.0, 0.0).normalize() * 2 * rEsfera;
+
+    Cone cone(alturaCone, raioBase, dirCone.normalize(), centroBase);
+    Vec3 Kd_cone = Vec3(0.8f, 0.3f, 0.2f);
 
     // Definir as dimensões dos pixels virtuais
     float Dx = wJanela / nCol;
@@ -113,95 +131,119 @@ int main(int argc, char *argv[])
     bool isRunning = true; // variável de controle do loop
     SDL_Event event;       // variável para checar os eventos da janela
 
-    while (isRunning)
+while (isRunning)
+{
+    // Tratamento de eventos
+    while (SDL_PollEvent(&event))
     {
-        // É possível interagir com a janela, com clicks, apertando teclas ou clicando para fechar a janela
-        // essas interações são chamadas de "eventos", abaixo, verificamos se o evento de fechar janela ocorre
-        while (SDL_PollEvent(&event))
+        if (event.type == SDL_QUIT)
         {
-            if (event.type == SDL_QUIT)
-            {
-                isRunning = false;
-            }
+            isRunning = false;
         }
-
-        // Limpar o renderer com a cor de fundo
-        SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-        SDL_RenderClear(renderer);
-
-        // Definir a cor para a esfera
-
-        // Aqui temos a estrutura para pintar um pixel, no caso, um loop para pintar todos os pixeis da janela
-        for (int lin = 0; lin < nLin; lin++)
-        {
-            float yp = hJanela / 2.0f - Dy / 2.0f - lin * Dy;
-            for (int col = 0; col < nCol; col++)
-            {
-                float xp = -wJanela / 2.0f + Dx / 2.0f + col * Dx;
-
-                Vec3 pontoCentroPixel(xp, yp, -dJanela);
-
-                Ray raio(Vec3(0.0f, 0.0f, 0.0f), pontoCentroPixel);
-
-                float tEsfera = std::numeric_limits<float>::max();
-                float tChao = std::numeric_limits<float>::max();
-                float tFundo = std::numeric_limits<float>::max();
-                float tCilindro = std::numeric_limits<float>::max();
-
-                bool hitEsfera = esfera.intersect(raio, tEsfera);
-                bool hitChao = chao.intersect(raio, tChao);
-                bool hitFundo = fundo.intersect(raio, tFundo);
-                bool hitCilindro = cilindro.intersect(raio, tCilindro);
-
-                if (hitEsfera && (tEsfera < std::fabs(tChao) && tEsfera < std::fabs(tFundo) && tEsfera < std::fabs(tCilindro)))
-                {
-                    // Ponto de interseção do raio com a esfera
-                    Vec3 P_I = raio.origin + raio.direction * tEsfera;
-
-                    Vec3 I = esfera.calculateLighting(P_I, raio, luz, luzAmb, Ke_d, Ke_a, Ke_e, m);
-
-                    setRenderColor(renderer, I);
-                }
-                else if (hitCilindro && (tCilindro < std::fabs(tChao) || tCilindro < std::fabs(tFundo)))
-                {
-                    Vec3 P_I = raio.origin + raio.direction * tCilindro;
-
-                    Vec3 I = cilindro.calculateLighting(P_I, raio, luz, luzAmb, Kd_c, Ka_c, Ke_c, m);
-
-                    setRenderColor(renderer, I);
-                }
-                else if (hitChao && tChao < tEsfera && tChao < tFundo )
-                {
-                    // Ponto de interseção do raio com o chão
-                    Vec3 P_I = raio.origin + raio.direction * tChao;
-
-                    const Vec3 I = chao.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kc_d, Kc_a, Kc_e, m_c);
-
-                    setRenderColor(renderer, I);
-
-                }
-                else if (hitFundo && (tFundo < tEsfera || tFundo < tCilindro))
-                {
-                    // Ponto de interseção do raio com o chão
-                    Vec3 P_I = raio.origin + raio.direction * tFundo;
-
-                    const Vec3 I = fundo.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kf_d, Kf_a, Kf_e, m_f);
-
-                    setRenderColor(renderer, I);
-
-                }
-                else
-                {
-                    // Se não houver interseção, definir a cor de fundo
-                    SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-                }
-                SDL_RenderDrawPoint(renderer, col, lin);
-            }
-
-            // Por fim, atualizamos a janela com o renderer que acabamos de pintar e tudo deve funcionar corretamente
-        }
-        SDL_RenderPresent(renderer);
     }
+
+    // Limpar o renderer com a cor de fundo
+    SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+    SDL_RenderClear(renderer);
+
+    // Laço para cada pixel da janela
+    for (int lin = 0; lin < nLin; lin++)
+    {
+        float yp = hJanela / 2.0f - Dy / 2.0f - lin * Dy;
+        for (int col = 0; col < nCol; col++)
+        {
+            float xp = -wJanela / 2.0f + Dx / 2.0f + col * Dx;
+
+            Vec3 pontoCentroPixel(xp, yp, -dJanela);
+            Vec3 dr = (pontoCentroPixel - Vec3(0.0f, 0.0f, 0.0f)).normalize(); // Direção do raio
+
+            Ray raio(Vec3(0.0f, 0.0f, 0.0f), dr);
+
+            // Inicialização dos tempos de interseção
+            float tEsfera = std::numeric_limits<float>::max();
+            float tChao = std::numeric_limits<float>::max();
+            float tFundo = std::numeric_limits<float>::max();
+            float tCilindro = std::numeric_limits<float>::max();
+            float tCone = std::numeric_limits<float>::max();
+
+            // Verificar interseções com os objetos
+            bool hitEsfera = esfera.intersect(raio, tEsfera);
+            bool hitChao = chao.intersect(raio, tChao);
+            bool hitFundo = fundo.intersect(raio, tFundo);
+            bool hitCilindro = cilindro.intersect(raio, tCilindro);
+            bool hitCone = cone.intersect(raio, tCone);
+
+            // Encontrar o menor t e o objeto correspondente
+            float menor_t = std::numeric_limits<float>::max();
+            int objeto = -1;
+
+            if (hitEsfera && tEsfera < menor_t) {
+                menor_t = tEsfera;
+                objeto = 0; // Índice da esfera
+            }
+
+            if (hitCone && tCone < menor_t) {
+                menor_t = tCone;
+                objeto = 6; // Índice do cone
+            }
+
+            if (hitCilindro && tCilindro < menor_t) {
+                menor_t = tCilindro;
+                objeto = 3; // Índice do cilindro
+            }
+
+            if (hitChao && tChao < menor_t) {
+                menor_t = tChao;
+                objeto = 1; // Índice do chão
+            }
+
+            if (hitFundo && tFundo < menor_t) {
+                menor_t = tFundo;
+                objeto = 2; // Índice do fundo
+            }
+
+            // Renderizar com base no objeto com menor_t
+            if (objeto != -1 && menor_t < std::numeric_limits<float>::max()) {
+                Vec3 P_I = raio.origin + raio.direction * menor_t;
+                Vec3 I;
+
+                switch (objeto) {
+                    case 0: // Esfera
+                        I = esfera.calculateLighting(P_I, raio, luz, luzAmb, Ke_d, Ke_a, Ke_e, m);
+                        break;
+                    case 1: // Chão
+                        I = chao.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kc_d, Kc_a, Kc_e, m_c);
+                        break;
+                    case 2: // Fundo
+                        I = fundo.calculateLighting(esfera, P_I, raio, luz, luzAmb, Kf_d, Kf_a, Kf_e, m_f);
+                        break;
+                    case 3: // Cilindro
+                        I = cilindro.calculateLighting(P_I, raio, luz, luzAmb, Kd_c, Ka_c, Ke_c, m);
+                        break;
+                    case 6: // Cone
+                        I = cone.calculateLighting(P_I, raio, luz, luzAmb, Kd_cone, Kd_cone, Kd_cone, m);
+                        break;
+                    // Adicione outros casos se houver mais objetos
+                    default:
+                        I = Vec3(0.0f, 0.0f, 0.0f); // Cor padrão
+                        break;
+                }
+
+                setRenderColor(renderer, I);
+            }
+            else {
+                // Se não houver interseção, definir a cor de fundo
+                SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+            }
+
+            // Desenhar o ponto
+            SDL_RenderDrawPoint(renderer, col, lin);
+        }
+    }
+
+    // Atualizar a janela com o conteúdo renderizado
+    SDL_RenderPresent(renderer);
+}
 
     // Destruir os objetos criados para limpar a memória
     SDL_DestroyRenderer(renderer);

@@ -17,6 +17,7 @@ public:
     float dot(const Vec3& v ) const; // Produto escalar
     float norma() const; // Magnitude
     Vec3 normalize() const;
+    Vec3 cross(const Vec3& v) const; // Produto vetorial
 };
 
 #endif // VEC3_H
